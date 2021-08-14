@@ -86,7 +86,10 @@ const Field = props => {
 /*******************************************************************************************************/
 // Definimos el Formulario de Verificación de la Transacción //
 /*******************************************************************************************************/
-const CheckoutForm = () => {
+const CheckoutForm = props => {
+	// Obtenemos las propiedades
+	const { amount } = props;
+
 	// Hook que retorna la referencia a Stripe
 	const stripe = useStripe();
 	// Hook que contiene la información recolectada de un elemento de la Api de Stripe
@@ -303,7 +306,13 @@ const App = () => {
 	const [stripePromise] = useState(() => loadStripe(public_key));
 
 	// Especificamos el monto del producto
-	const [amount] = useState(2800.0);
+	const [amount] = useState(2800);
+
+	// Función para formatear un numero a decimal
+	const formatter = new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD'
+	});
 
 	// Renderizamos el componente
 	return (
@@ -319,16 +328,10 @@ const App = () => {
 							<div className="container-product">
 								<img src={product} className="product-image" alt="product" />
 								<h4 className="product-desc">Laptop Dell Alienware M15</h4>
-								{/* <h2>$ 2,800.00</h2> */}
-								<NumberFormat
-									className="product-price"
-									value={amount}
-									thousandSeparator={true}
-									prefix={'$'}
-								/>
+								<h2 className="product-price">{formatter.format(amount)}</h2>
 							</div>
 							<Elements stripe={stripePromise} options={ELEMENTS_OPTIONS}>
-								<CheckoutForm />
+								<CheckoutForm amount={amount} />
 							</Elements>
 						</div>
 					</div>

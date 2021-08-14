@@ -145,6 +145,7 @@ button {
 .product-price {
 	margin-top: 10px;
 	color: #333333;
+	text-align: right;
 }
 
 .Result {
