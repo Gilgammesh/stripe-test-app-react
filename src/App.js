@@ -6,6 +6,8 @@ import logo from './img/logo.png';
 import product from './img/product.png';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import NumberFormat from 'react-number-format';
+import axios from 'axios';
 import './App.css';
 
 /*******************************************************************************************************/
@@ -19,6 +21,7 @@ const public_key =
 // Opciones de configuración de los elementos de stripe //
 /*******************************************************************************************************/
 const ELEMENTS_OPTIONS = {
+	// Establecemos las opciones de la fuente
 	fonts: [
 		{
 			// Establecemos la fuente Roboto al igual que el css de la App
@@ -89,13 +92,15 @@ const CheckoutForm = () => {
 	// Hook que contiene la información recolectada de un elemento de la Api de Stripe
 	const elements = useElements();
 
-	// Estado del error al procesar la transacción
+	// Estado del error al introducir los datos de la tarjeta
 	const [error, setError] = useState(null);
 	// Estado de haberse completado la tarjeta
 	const [cardComplete, setCardComplete] = useState(false);
 	// Estado de procesar la transacción
 	const [processing, setProcessing] = useState(false);
 
+	// Estado del error al procesar la transacción
+	const [paymentError, setPaymentError] = useState(null);
 	// Valor del método del pago o transacción
 	const [paymentMethod, setPaymentMethod] = useState(null);
 
@@ -131,6 +136,7 @@ const CheckoutForm = () => {
 
 		// Si existe un error
 		if (error) {
+			console.log(error);
 			// Hacemos un focus a la tarjta
 			elements.getElement('card').focus();
 			// Retornamos el envío del formulario
@@ -149,7 +155,8 @@ const CheckoutForm = () => {
 		// Usamos a CardElement y creamos el método de pago de Stripe
 		const payload = await stripe.createPaymentMethod({
 			type: 'card', // Tipo: "tarjeta"
-			card: cardElement // Elemento que contiene los datos de la tarjeta
+			card: cardElement, // Elemento que contiene los datos de la tarjeta
+			billing_details: billingDetails // Datos de facturación del cliente
 		});
 
 		// Finalizamos el proceso
@@ -157,11 +164,25 @@ const CheckoutForm = () => {
 
 		// Si existe un error en el método de pago
 		if (payload.error) {
+			// Guardamos el error en consola del pago
+			setPaymentError(payload.error);
 			// Mostramos el error de pago en consola
 			console.log('[error payment]', payload.error);
 		} else {
 			// Guardamos los datos del método de pago
 			setPaymentMethod(payload.paymentMethod);
+			// Mostramos en consolo el método de pago
+			console.log(payload.paymentMethod);
+			// Enviamos el id del payment al servicio o api de test
+			const response = await axios({
+				method: 'POST',
+				url: 'http://localhost:4000/api/checkou',
+				data: {
+					id: payload.paymentMethod.id,
+					amount: 2800 * 100
+				}
+			});
+			console.log(response.data);
 		}
 	};
 
@@ -177,10 +198,21 @@ const CheckoutForm = () => {
 		});
 	};
 
-	// Función que se ejecuta si hay un error
-	const alertError = () => {
-		alert(error.message);
-	};
+	// Si existe un error en el pago
+	if (paymentError) {
+		// Renderizamos el componente
+		return (
+			<div className="Result">
+				<div className="ResultTitle" role="alert">
+					Pago fallido
+				</div>
+				<div className="ResultMessage">asdada</div>
+				<button type="button" className="btn btn-danger ResultButton" onClick={reset}>
+					Reiniciar
+				</button>
+			</div>
+		);
+	}
 
 	// Si existe un método de pago exitoso
 	if (paymentMethod) {
@@ -190,8 +222,11 @@ const CheckoutForm = () => {
 				<div className="ResultTitle" role="alert">
 					Pago exitoso
 				</div>
-				<div className="ResultMessage">Se generó un método de pago: {paymentMethod.id}</div>
-				<button type="button" className="btn btn-danger" onClick={reset}>
+				<div className="ResultMessage">
+					Se generó un método de pago: <b> {paymentMethod.id}</b>
+				</div>
+				<div className="ResultMessage">por el monto de $ 2,800.00</div>
+				<button type="button" className="btn btn-danger ResultButton" onClick={reset}>
 					Reiniciar
 				</button>
 			</div>
@@ -248,7 +283,6 @@ const CheckoutForm = () => {
 						/>
 					</div>
 				</fieldset>
-				{error && alertError}
 				<div className="BtnGroup">
 					<div className="d-grid gap-2">
 						<button type="submit" className="btn btn-primary" disabled={processing || !stripe}>
@@ -268,6 +302,9 @@ const App = () => {
 	// Cargamos stripe usando la llave pública (fuera del componente para que no se cargue con cada render)
 	const [stripePromise] = useState(() => loadStripe(public_key));
 
+	// Especificamos el monto del producto
+	const [amount] = useState(2800.0);
+
 	// Renderizamos el componente
 	return (
 		<div className="App">
@@ -279,7 +316,17 @@ const App = () => {
 				<div className="container">
 					<div className="row justify-content-md-center">
 						<div className="col col-md-8">
-							<img src={product} class="img-fluid" alt="product" />
+							<div className="container-product">
+								<img src={product} className="product-image" alt="product" />
+								<h4 className="product-desc">Laptop Dell Alienware M15</h4>
+								{/* <h2>$ 2,800.00</h2> */}
+								<NumberFormat
+									className="product-price"
+									value={amount}
+									thousandSeparator={true}
+									prefix={'$'}
+								/>
+							</div>
 							<Elements stripe={stripePromise} options={ELEMENTS_OPTIONS}>
 								<CheckoutForm />
 							</Elements>

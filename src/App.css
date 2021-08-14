@@ -43,7 +43,7 @@ button {
 }
 
 .Form {
-	margin-top: 50px;
+	margin-top: 30px;
 	animation: fade 200ms ease-out;
 }
 
@@ -60,7 +60,7 @@ button {
 .BtnGroup {
 	margin: 0 15px 20px;
 	padding: 0;
-	border-style: none;	
+	border-style: none;
 	will-change: opacity, transform;
 }
 
@@ -88,7 +88,6 @@ button {
 }
 
 .FormRowInput:-webkit-autofill {
-	-webkit-text-fill-color: #aaaaaa;
 	transition: background-color 100000000s;
 	animation: 1ms void-animation-out;
 }
@@ -97,7 +96,6 @@ button {
 	font-size: 16px;
 	width: 100%;
 	padding: 11px 15px 11px 0;
-	/* color: #fff; */
 	background-color: transparent;
 	animation: 1ms void-animation-out;
 }
@@ -113,4 +111,71 @@ button {
 .StripeElement {
 	width: 100%;
 	padding: 11px 15px 11px 0;
+}
+
+.container-product {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	margin-top: 30px;
+	margin-bottom: 15px;
+	margin-left: 15px;
+	margin-right: 15px;
+	border-style: none;
+	background-color: #ffffff;
+	padding-top: 30px;
+	padding-bottom: 20px;
+	will-change: opacity, transform;
+	box-shadow: 0 6px 9px rgba(50, 50, 93, 0.06), 0 2px 5px rgba(0, 0, 0, 0.08), inset 0 1px 0 #bbbbbb;
+	border-radius: 4px;
+}
+
+.product-image {
+	width: 350px;
+	height: auto;
+	margin-bottom: 10px;
+}
+
+.product-desc {
+	margin-top: 10px;
+	color: #aaaaaa;
+}
+
+.product-price {
+	margin-top: 10px;
+	color: #333333;
+}
+
+.Result {
+	background-color: #ffffff;
+	margin-top: 30px;
+	margin-bottom: 15px;
+	margin-left: 15px;
+	margin-right: 15px;
+	text-align: center;
+	padding: 20px;
+	animation: fade 200ms ease-out;
+	will-change: opacity, transform;
+	box-shadow: 0 6px 9px rgba(50, 50, 93, 0.06), 0 2px 5px rgba(0, 0, 0, 0.08), inset 0 1px 0 #bbbbbb;
+	border-radius: 4px;
+}
+
+.ResultTitle {
+	font-weight: 500;
+	margin-bottom: 8px;
+	font-size: 20px;
+	text-align: center;
+}
+
+.ResultMessage {
+	color: #333333;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.6em;
+	text-align: center;
+}
+
+.ResultButton {
+	margin-top: 20px;
 }
