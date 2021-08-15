@@ -6,16 +6,20 @@ import logo from './img/logo.png';
 import product from './img/product.png';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import NumberFormat from 'react-number-format';
 import axios from 'axios';
 import './App.css';
+import { formatCurrency } from './helpers/formatters';
+
+/*******************************************************************************************************/
+// Ruta del API o Endpoint de Stripe Test //
+/*******************************************************************************************************/
+const baseUrl = 'http://localhost:4000';
 
 /*******************************************************************************************************/
 // Configuración de Stripe //
 /*******************************************************************************************************/
-// Llave pública de stripe
-const public_key =
-	'pk_test_51JNtuqF0ZPDJmgDa2cQ9YNhqf8ZmQpquWv5seWZsJ7lNVxMSCFfeXjZiviNhUpsmMP1DYCNSxwXbCHcc20fgqBRV00JE5OyYSh';
+// Llave pública de stripe (Se debe colocar la creada con su cuenta personal en la página de Stripe)
+const public_key = process.env.REACT_APP_STRIPE_PUBLIC_KEY || '';
 
 /*******************************************************************************************************/
 // Opciones de configuración de los elementos de stripe //
@@ -102,10 +106,17 @@ const CheckoutForm = props => {
 	// Estado de procesar la transacción
 	const [processing, setProcessing] = useState(false);
 
-	// Estado del error al procesar la transacción
-	const [paymentError, setPaymentError] = useState(null);
 	// Valor del método del pago o transacción
 	const [paymentMethod, setPaymentMethod] = useState(null);
+
+	// Datos del pago devuelto al procesar el pago
+	const [payment, setPayment] = useState({
+		error: false,
+		message: '',
+		id: '',
+		amount: 0,
+		description: ''
+	});
 
 	// Valores de los campos de facturación
 	const [billingDetails, setBillingDetails] = useState({
@@ -162,30 +173,45 @@ const CheckoutForm = props => {
 			billing_details: billingDetails // Datos de facturación del cliente
 		});
 
-		// Finalizamos el proceso
-		setProcessing(false);
-
 		// Si existe un error en el método de pago
 		if (payload.error) {
-			// Guardamos el error en consola del pago
-			setPaymentError(payload.error);
 			// Mostramos el error de pago en consola
 			console.log('[error payment]', payload.error);
 		} else {
 			// Guardamos los datos del método de pago
 			setPaymentMethod(payload.paymentMethod);
 			// Mostramos en consolo el método de pago
-			console.log(payload.paymentMethod);
+			// console.log(payload.paymentMethod);
 			// Enviamos el id del payment al servicio o api de test
 			const response = await axios({
 				method: 'POST',
-				url: 'http://localhost:4000/api/checkou',
+				url: `${baseUrl}/api/checkout`,
 				data: {
-					id: payload.paymentMethod.id,
-					amount: 2800 * 100
+					id: payload.paymentMethod.id, // Id de la transacción de stripe
+					amount: amount * 100 // Centavos de la moneda ($ dólares en nuestro caso)
 				}
 			});
-			console.log(response.data);
+
+			// Finalizamos el proceso
+			setProcessing(false);
+
+			// Analizamos la respuesta
+			if (response.data.status) {
+				// Recordar que el monto recibido está en centavos de dólar por lo que se debe dividir entre 100
+				setPayment({
+					...payment,
+					error: false,
+					id: response.data.payment.id,
+					amount: response.data.payment.amount / 100,
+					description: response.data.payment.description
+				});
+			} else {
+				setPayment({
+					...payment,
+					error: true,
+					message: response.data.message
+				});
+			}
 		}
 	};
 
@@ -202,14 +228,14 @@ const CheckoutForm = props => {
 	};
 
 	// Si existe un error en el pago
-	if (paymentError) {
+	if (payment.error) {
 		// Renderizamos el componente
 		return (
 			<div className="Result">
 				<div className="ResultTitle" role="alert">
 					Pago fallido
 				</div>
-				<div className="ResultMessage">asdada</div>
+				<div className="ResultMessage">Motivo: {payment.message}</div>
 				<button type="button" className="btn btn-danger ResultButton" onClick={reset}>
 					Reiniciar
 				</button>
@@ -218,7 +244,7 @@ const CheckoutForm = props => {
 	}
 
 	// Si existe un método de pago exitoso
-	if (paymentMethod) {
+	if (paymentMethod && payment.error === false) {
 		// Renderizamos el componente
 		return (
 			<div className="Result">
@@ -226,9 +252,14 @@ const CheckoutForm = props => {
 					Pago exitoso
 				</div>
 				<div className="ResultMessage">
-					Se generó un método de pago: <b> {paymentMethod.id}</b>
+					Se generó el id de stripe: <b> {paymentMethod.id}</b>
 				</div>
-				<div className="ResultMessage">por el monto de $ 2,800.00</div>
+				<div className="ResultMessage">
+					Se generó el pago: <b> {payment.id}</b>
+				</div>
+				<div className="ResultMessage">Producto: {payment.description}</div>
+				<div className="ResultMessage">Monto: {formatCurrency(payment.amount)}</div>
+				<div className="ResultMessage">Se le envió la transaccion a {billingDetails.email}</div>
 				<button type="button" className="btn btn-danger ResultButton" onClick={reset}>
 					Reiniciar
 				</button>
@@ -308,12 +339,6 @@ const App = () => {
 	// Especificamos el monto del producto
 	const [amount] = useState(2800);
 
-	// Función para formatear un numero a decimal
-	const formatter = new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency: 'USD'
-	});
-
 	// Renderizamos el componente
 	return (
 		<div className="App">
@@ -321,18 +346,97 @@ const App = () => {
 				<img src={logo} className="App-logo" alt="logo" />
 				<h3>Stripe App</h3>
 			</header>
-			<div className="App-body">
-				<div className="container">
-					<div className="row justify-content-md-center">
-						<div className="col col-md-8">
-							<div className="container-product">
-								<img src={product} className="product-image" alt="product" />
-								<h4 className="product-desc">Laptop Dell Alienware M15</h4>
-								<h2 className="product-price">{formatter.format(amount)}</h2>
+			<div className="App-body container-fluid">
+				<div className="row">
+					<div className="col col-md-8">
+						<div className="row justify-content-md-center">
+							<div className="col col-md-10">
+								<div className="container-product">
+									<img src={product} className="product-image" alt="product" />
+									<h4 className="product-desc">Laptop Dell Alienware M15</h4>
+									<h2 className="product-price">{formatCurrency(amount)}</h2>
+								</div>
+								<Elements stripe={stripePromise} options={ELEMENTS_OPTIONS}>
+									<CheckoutForm amount={amount} />
+								</Elements>
 							</div>
-							<Elements stripe={stripePromise} options={ELEMENTS_OPTIONS}>
-								<CheckoutForm amount={amount} />
-							</Elements>
+						</div>
+					</div>
+					<div className="col col-md-4">
+						<div className="row justify-content-md-center">
+							<div className="col col-md-11">
+								<div className="container-cards">
+									<h3>Lista de Tarjetas de Prueba</h3>
+									<br />
+									<ul className="list-group">
+										<h5>Exitosas</h5>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4242 4242 4242 4242
+											<span className="badge bg-primary rounded-pill">Visa</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											5555 5555 5555 4444
+											<span className="badge bg-primary rounded-pill">Mastercard</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											3782 822463 10005
+											<span className="badge bg-primary rounded-pill">American Express</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											3056 9300 0902 0004
+											<span className="badge bg-primary rounded-pill">Diners Club</span>
+										</li>
+									</ul>
+									<br />
+									<ul className="list-group">
+										<h5>Error</h5>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 9235
+											<span className="badge bg-danger rounded-pill">risk_level</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 0002
+											<span className="badge bg-danger rounded-pill">card_declined</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 9995
+											<span className="badge bg-danger rounded-pill">insufficient_funds</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 9987
+											<span className="badge bg-danger rounded-pill">lost_card</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 9979
+											<span className="badge bg-danger rounded-pill">stolen_card</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 0069
+											<span className="badge bg-danger rounded-pill">expired_card</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 0127
+											<span className="badge bg-danger rounded-pill">incorrect_cvc</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 0101
+											<span className="badge bg-danger rounded-pill">cvc_check</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4000 0000 0000 0119
+											<span className="badge bg-danger rounded-pill">processing_error</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											4242 4242 4242 4241
+											<span className="badge bg-danger rounded-pill">incorrect_number</span>
+										</li>
+										<li className="list-group-item d-flex justify-content-between align-items-center">
+											5555 5555 5555 4220
+											<span className="badge bg-danger rounded-pill">brand_product</span>
+										</li>
+									</ul>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

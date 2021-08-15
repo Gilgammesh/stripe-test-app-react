@@ -6,6 +6,10 @@ html {
 	font-family: Roboto, Open Sans, Segoe UI, sans-serif;
 	font-style: normal;
 	text-rendering: optimizeLegibility;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
 }
 
 input,
@@ -19,6 +23,10 @@ button {
 
 .App {
 	text-align: left;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .App-logo {
@@ -28,7 +36,7 @@ button {
 
 .App-header {
 	background-color: #e9ebed;
-	height: 16vh;
+	height: 15vh;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -39,7 +47,7 @@ button {
 
 .App-body {
 	background-color: #edf0f2;
-	height: 84vh;
+	height: 85vh;
 }
 
 .Form {
@@ -111,6 +119,15 @@ button {
 .StripeElement {
 	width: 100%;
 	padding: 11px 15px 11px 0;
+}
+
+.container-cards {
+	margin-top: 30px;
+	background-color: #ffffff;
+	padding: 20px 20px;
+	will-change: opacity, transform;
+	box-shadow: 0 6px 9px rgba(50, 50, 93, 0.06), 0 2px 5px rgba(0, 0, 0, 0.08), inset 0 1px 0 #bbbbbb;
+	border-radius: 4px;
 }
 
 .container-product {
